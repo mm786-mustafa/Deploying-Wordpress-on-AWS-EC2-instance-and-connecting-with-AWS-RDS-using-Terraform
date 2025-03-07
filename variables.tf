@@ -82,7 +82,7 @@ variable "db_username" {
   default = "m_mustafa"
 }
 
-variable "db_passwword" {
+variable "db_password" {
   description = "Database password"
   type = string
   default = "no1knows786"

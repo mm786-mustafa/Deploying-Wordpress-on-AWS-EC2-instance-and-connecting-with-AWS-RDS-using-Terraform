@@ -51,11 +51,12 @@ resource "aws_eip" "elastic_ip_address" {
 
 # *** NAT Gateway ***
 resource "aws_nat_gateway" "my_nat_gateway" {
-  subnet_id = aws_subnet.creating_private_subnets[0].id
+  subnet_id = aws_subnet.creating_public_subnets[0].id
   allocation_id = aws_eip.elastic_ip_address.allocation_id
   tags = {
     Name = var.ngw_name
   }
+  depends_on = [ aws_internet_gateway.my_internet_gateway ]
 }
 
 # *** Public Route Table ***
@@ -162,7 +163,7 @@ resource "aws_db_instance" "my_rds_database" {
   storage_type = "gp3"
   instance_class = "db.t3.micro"
   username = var.db_username
-  password = var.db_passwword
+  password = var.db_password
   db_subnet_group_name = aws_db_subnet_group.my_db_subnet_group.id
   vpc_security_group_ids = [ aws_security_group.my_security_group.id ]
   skip_final_snapshot = true
@@ -181,7 +182,7 @@ resource "aws_instance" "my_ec2_instance" {
   key_name = "mustafa-california-key"
   subnet_id = aws_subnet.creating_private_subnets[0].id
   security_groups = [ aws_security_group.my_security_group.id ]
-  user_data_base64 = base64encode(<<-EOF
+  user_data = <<-EOF
     #!/bin/bash
     sudo yum update -y
     sudo amazon-linux-extras install php7.4 -y
@@ -198,11 +199,11 @@ resource "aws_instance" "my_ec2_instance" {
     sudo cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
     sudo sed -i "s/database_name_here/${var.db_name}/" /var/www/html/wp-config.php
     sudo sed -i "s/username_here/${var.db_username}/" /var/www/html/wp-config.php
-    sudo sed -i "s/password_here/${var.db_passwword}/" /var/www/html/wp-config.php
-    sudo sed -i "s/localhost/${aws_db_instance.my_rds_database.endpoint}/" /var/www/html/wp-config.php
+    sudo sed -i "s/password_here/${var.db_password}/" /var/www/html/wp-config.php
+    sudo sed -i "s/localhost/${split(":",aws_db_instance.my_rds_database.endpoint)[0]}/" /var/www/html/wp-config.php
     sudo systemctl restart httpd
     EOF
-    )
+    # "${file("user_data.sh")}"
   tags = {
     Name = "${var.my_ec2_instance_name}-${data.aws_region.current.name}"
   }
