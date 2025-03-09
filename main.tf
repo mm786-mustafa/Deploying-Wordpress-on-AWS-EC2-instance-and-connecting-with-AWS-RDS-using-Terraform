@@ -23,6 +23,8 @@ data "aws_availability_zones" "available" {}
 
 data "aws_region" "current" {}
 
+# ************ Resources ****************
+
 # *** VPC ***
 resource "aws_vpc" "myVPC" {
   cidr_block = var.vpc_cidr
@@ -136,6 +138,15 @@ resource "aws_security_group" "my_security_group" {
 }
 
 # *** Security Group Inbound Rule ***
+resource "aws_vpc_security_group_egress_rule" "allow_outbound_traffic" {
+  security_group_id = aws_security_group.my_security_group.id
+  from_port   = 0
+  to_port     = 0
+  ip_protocol = "-1"
+  cidr_ipv4 = "0.0.0.0/0"
+}
+
+# *** Security Group Inbound Rule ***
 resource "aws_vpc_security_group_ingress_rule" "allow_http" {
   security_group_id = aws_security_group.my_security_group.id
   ip_protocol = "tcp"
@@ -232,6 +243,7 @@ resource "aws_lb_target_group_attachment" "target_group_attachment" {
 resource "aws_alb" "my_alb" {
   load_balancer_type = "application"
   name = var.lb_name
+  internal = false
   ip_address_type = "ipv4"
   security_groups = [ aws_security_group.my_security_group.id ]
   subnets = [ aws_subnet.creating_public_subnets[0].id, aws_subnet.creating_public_subnets[1].id ]
