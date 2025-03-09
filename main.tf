@@ -29,18 +29,18 @@ data "aws_region" "current" {}
 resource "aws_vpc" "myVPC" {
   cidr_block = var.vpc_cidr
   tags = {
-    Name = var.vpc_name
+    Name = "${var.environment}-${var.vpc_name}-${data.aws_region.current.name}"
   }
 }
 
 # *** Internet Gateway ***
 resource "aws_internet_gateway" "my_internet_gateway" {
   tags = {
-    Name = var.igw_name
+    Name = "${var.environment}-${var.igw_name}-${data.aws_region.current.name}"
   }
 }
 
-# *** VPC Attachment***
+# *** VPC Attachment ***
 resource "aws_internet_gateway_attachment" "internet_gateway_attachment" {
   vpc_id = aws_vpc.myVPC.id
   internet_gateway_id = aws_internet_gateway.my_internet_gateway.id
@@ -56,7 +56,7 @@ resource "aws_nat_gateway" "my_nat_gateway" {
   subnet_id = aws_subnet.creating_public_subnets[0].id
   allocation_id = aws_eip.elastic_ip_address.allocation_id
   tags = {
-    Name = var.ngw_name
+    Name = "${var.environment}-${var.ngw_name}-${data.aws_region.current.name}"
   }
   depends_on = [ aws_internet_gateway.my_internet_gateway ]
 }
@@ -65,7 +65,7 @@ resource "aws_nat_gateway" "my_nat_gateway" {
 resource "aws_route_table" "my_public_route_table" {
   vpc_id = aws_vpc.myVPC.id
   tags = {
-    Name = var.public_RT_name
+    Name = "${var.environment}-${var.public_RT_name}-${data.aws_region.current.name}"
   }
 }
 
@@ -80,7 +80,7 @@ resource "aws_route" "public_route" {
 resource "aws_route_table" "my_private_route_table" {
   vpc_id = aws_vpc.myVPC.id
   tags = {
-    Name = var.private_RT_name
+    Name = "${var.environment}-${var.private_RT_name}-${data.aws_region.current.name}"
   }
 }
 
@@ -99,7 +99,7 @@ resource "aws_subnet" "creating_public_subnets" {
   availability_zone = data.aws_availability_zones.available.names[count.index]
   map_public_ip_on_launch = true
   tags = {
-    Name = "${var.public_subnet_name}-${count.index+1}-${data.aws_availability_zones.available.names[count.index]}"
+    Name = "${var.environment}-${var.public_subnet_name}-${count.index+1}-${data.aws_availability_zones.available.names[count.index]}"
   }
 }
 
@@ -117,7 +117,7 @@ resource "aws_subnet" "creating_private_subnets" {
   cidr_block = cidrsubnet(var.vpc_cidr, var.subnet_mask, count.index+2)
   availability_zone = data.aws_availability_zones.available.names[count.index]
   tags = {
-    Name = "${var.private_subnet_name}-${count.index+1}-${data.aws_availability_zones.available.names[count.index]}"
+    Name = "${var.environment}-${var.private_subnet_name}-${count.index+1}-${data.aws_availability_zones.available.names[count.index]}"
   }
 }
 
@@ -133,16 +133,16 @@ resource "aws_security_group" "my_security_group" {
   vpc_id = aws_vpc.myVPC.id
   description = "Allow HTTP and MySQL access"
   tags = {
-    Name = "${var.security_group_name}-${data.aws_region.current.name}"
+    Name = "${var.environment}-${var.security_group_name}-${data.aws_region.current.name}"
   }
 }
 
 # *** Security Group Outbound Rule ***
 resource "aws_vpc_security_group_egress_rule" "allow_outbound_traffic" {
   security_group_id = aws_security_group.my_security_group.id
+  ip_protocol = "-1"
   from_port   = 0
   to_port     = 0
-  ip_protocol = "-1"
   cidr_ipv4 = "0.0.0.0/0"
 }
 
@@ -188,9 +188,9 @@ resource "aws_db_subnet_group" "my_db_subnet_group" {
 
 # *** EC2 Instance ***
 resource "aws_instance" "my_ec2_instance" {
-  instance_type = "t2.micro"
-  ami = "ami-018a1ea25ff5268f0"
-  key_name = "mustafa-california-key"
+  instance_type = var.instance_type
+  ami = var.ami
+  key_name = var.key_name
   subnet_id = aws_subnet.creating_private_subnets[0].id
   security_groups = [ aws_security_group.my_security_group.id ]
   user_data = <<-EOF
@@ -216,7 +216,7 @@ resource "aws_instance" "my_ec2_instance" {
     EOF
     # "${file("user_data.sh")}"
   tags = {
-    Name = "${var.my_ec2_instance_name}-${data.aws_region.current.name}"
+    Name = "${var.environment}-${var.my_ec2_instance_name}-${data.aws_region.current.name}"
   }
 }
 
@@ -229,6 +229,9 @@ resource "aws_lb_target_group" "my_target_group" {
   vpc_id = aws_vpc.myVPC.id
   health_check {
     path = "/wp-admin/install.php"
+  }
+  tags = {
+    Name = "${var.environment}-${var.target_group_name}-${data.aws_region.current.name}"
   }
 }
 
@@ -247,6 +250,9 @@ resource "aws_alb" "my_alb" {
   ip_address_type = "ipv4"
   security_groups = [ aws_security_group.my_security_group.id ]
   subnets = [ aws_subnet.creating_public_subnets[0].id, aws_subnet.creating_public_subnets[1].id ]
+  tags = {
+    Name = "${var.environment}-${var.lb_name}-${data.aws_region.current.name}"
+  }
 }
 
 # *** ALB Listener ***

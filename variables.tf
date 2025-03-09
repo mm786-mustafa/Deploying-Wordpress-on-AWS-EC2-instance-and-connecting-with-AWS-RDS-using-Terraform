@@ -4,6 +4,30 @@ variable "region" {
   default     = "us-west-1"
 }
 
+variable "environment" {
+  description = "Environment in which infrastructure is being created."
+  type = string
+  default = "dev"
+}
+
+variable "instance_type" {
+  description = "Instance type for the EC2 instance."
+  type = string
+  default = "t2.micro"
+}
+
+variable "ami" {
+  description = "Also known as image id."
+  type = string
+  default = "ami-018a1ea25ff5268f0"
+}
+
+variable "key_name" {
+  description = "Key for remote access."
+  type = string
+  default = "mustafa-california-key"
+}
+
 variable "vpc_name" {
   description = "Name of the VPC"
   type        = string
