@@ -46,6 +46,12 @@ variable "igw_name" {
   default     = "mustafa-igw"
 }
 
+variable "eip_name" {
+  description = "Name of elastic IP"
+  type = string
+  default = "mustafa-eip"
+}
+
 variable "ngw_name" {
   description = "Name of NAT gateway"
   type        = string

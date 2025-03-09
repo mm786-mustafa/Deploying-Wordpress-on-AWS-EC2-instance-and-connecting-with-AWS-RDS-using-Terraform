@@ -49,6 +49,9 @@ resource "aws_internet_gateway_attachment" "internet_gateway_attachment" {
 # *** Elastic IP Address ***
 resource "aws_eip" "elastic_ip_address" {
   domain = "vpc"
+  tags = {
+    Name = "${var.environment}-${var.eip_name}-${data.aws_region.current.name}"
+  }
 }
 
 # *** NAT Gateway ***
