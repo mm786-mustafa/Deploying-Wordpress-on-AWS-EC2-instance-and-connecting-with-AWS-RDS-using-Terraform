@@ -137,7 +137,7 @@ resource "aws_security_group" "my_security_group" {
   }
 }
 
-# *** Security Group Inbound Rule ***
+# *** Security Group Outbound Rule ***
 resource "aws_vpc_security_group_egress_rule" "allow_outbound_traffic" {
   security_group_id = aws_security_group.my_security_group.id
   from_port   = 0
